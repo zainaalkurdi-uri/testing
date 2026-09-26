@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InteroMap REDCap Bridge</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f9; text-align: center;">
+
+    <h2 style="margin-top: 20px; color: #333;">Body Sensation Mapping Task</h2>
+    <p style="color: #666;">Please complete your drawings on the silhouettes below. When finished, click the save button inside the tool.</p>
+
+    <!-- 1. Embedded Official InteroMap App Frame -->
+    <iframe id="interomap_tool" src="https://github.io" style="width: 100%; height: 750px; border: none;" title="InteroMap Core"></iframe>
+
+    <!-- 2. Integrated REDCap API Pipeline -->
+    <script type="text/javascript">
+        // Parse the dynamic variables sent via the REDCap URL link parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const recordId = urlParams.get('record_id');
+
+        // Listen for the "Save" message fired by the InteroMap iframe manual logic
+        window.addEventListener('message', function(event) {
+            if (event.origin !== 'https://interomap.github.io') return;
+
+            if (event.data && event.data.event === "interomap_data") {
+                
+                // Formulate the data object array matching REDCap's flat API layout structure
+                const apiPayload = [{
+                    "record_id": recordId,
+                    "interomap_data_output": event.data.output
+                }];
+
+                // POST the stringified matrix data straight to your institutional server database
+                // REPLACE THIS ENDPOINT WITH YOUR INSTITUTION'S ACTUAL REDCAP API ENDPOINT
+                fetch('https://your-institution-redcap.edu', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Accept': 'application/json'
+                    },
+                    body: new URLSearchParams({
+                        'token': 'YOUR_REDCAP_API_TOKEN_HERE', // PASTE YOUR API PASSKEY GENERATED VIA REDCAP HERE
+                        'content': 'record',
+                        'format': 'json',
+                        'type': 'flat',
+                        'overwriteBehavior': 'normal',
+                        'data': JSON.stringify(apiPayload)
+                    })
+                })
+                .then(response => {
+                    alert('Success! Canvas drawing matrices synced straight back to your REDCap profile.');
+                    window.close(); // Close the mapping task browser window automatically
+                })
+                .catch(err => {
+                    console.error('Database API link failure:', err);
+                    alert('Error saving data to REDCap.');
+                });
+            }
+        }, false);
+    </script>
+
+</body>
+</html>
+
